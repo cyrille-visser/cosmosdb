@@ -13,13 +13,22 @@ namespace CosmosEvents
         static void Main(string[] args)
         {
             MainAsync(args).GetAwaiter().GetResult();
-            Console.ReadLine();
         }
 
         public static async Task MainAsync(string[] args)
         {
-            //await Bulk();
-            //await SingleItem();
+            int RU = 10000;
+
+            if (args.Length > 0)
+            {
+                int i;
+                if (int.TryParse(args[0], out i) && i > 4000)
+                {
+                    RU = i;
+                }
+         
+            }
+            
             Console.WriteLine("Choose an option:");
             Console.WriteLine("1. Load sports events documents");
             Console.WriteLine("2. Run queries");
@@ -33,7 +42,7 @@ namespace CosmosEvents
             {
                 case ConsoleKey.D1:
                     {
-                        await _client.Initialize();
+                        await _client.Initialize(RU);
 
                         await Bulk(Utils.GenerateMarathon("Marathon New York", DateTime.Parse("2021-6-6"), "Olympic", 30000));
                         await Bulk(Utils.GenerateMarathon("Marathon Amsterdam", DateTime.Parse("2021-8-1"), "Olympic", 15000));
@@ -44,17 +53,18 @@ namespace CosmosEvents
                         await Bulk(Utils.Generate("Triathlon Argentina", DateTime.Parse("2021-5-1"), "Trial", 15000));
                         await Bulk(Utils.Generate("Triathlon Amsterdam", DateTime.Parse("2021-9-1"), "Trial", 10000));
 
-                        Console.WriteLine("");
-
                         break;
 
                     };
                 case ConsoleKey.D2:
                     {
-                        await Query("Marathon New York", DateTime.Parse("2021-6-6"), 51);
+                        await Query("Triathlon Canada", DateTime.Parse("2021-3-1"), 51);
                         break;
                     }
             }
+
+            Console.WriteLine("Press any key to stop...");
+            Console.ReadLine();
 
         }
 
@@ -72,8 +82,11 @@ namespace CosmosEvents
 
            
             await _client.Old_Q1TopRanked(eventName, eventDate);
+            Console.WriteLine("");
             await _client.Q2ViewAllEventsInYear(participantId);
+            Console.WriteLine("");
             await _client.Old_Q3ViewParticipantsPerEvent(eventName);
+            Console.WriteLine("");
             Marathon[] items = await _client.Old_Q4ViewHighScoreForParticipant(eventName, participantId);
 
           
@@ -83,12 +96,18 @@ namespace CosmosEvents
             Console.WriteLine("Optimized queries");
 
             await _client.New_Q1TopRanked(eventName, eventDate);
+            Console.WriteLine("");
             await _client.Q2ViewAllEventsInYear(participantId);
+            Console.WriteLine("");
             await _client.New_Q3ViewParticipantsPerEvent(eventName);
+            Console.WriteLine("");
 
             if (items.Length > 0)
-                await _client.New_Q4ViewHighScoreForParticipant("Marathon New York", items[0].Id);
+                await _client.New_Q4ViewHighScoreForParticipant(eventName, items[0].Id);
 
+            // run twice to demonstrate caching impact.
+            if (items.Length > 0)
+                await _client.New_Q4ViewHighScoreForParticipant(eventName, items[0].Id);
         }
 
         public static async Task Bulk(dynamic[] items)

@@ -30,6 +30,7 @@ namespace CosmosEvents
                     ParticipantId = participantIds[i],
                     ParticipantFirstname = GetRandomFirstNameMale(),
                     ParticipantLastname = GetRandomLastName(),
+                    Category = category,
                     Score = GenerateScore(runninghour, runningminute, runningsecond, 100)
                 };
 

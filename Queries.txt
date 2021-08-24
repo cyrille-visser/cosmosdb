@@ -1,12 +1,12 @@
 ﻿Query 1
 SELECT * FROM c 
-WHERE c.Eventname = 'Triathlon Amsterdam' and c.Eventdate = '2021-03-04T00:00:00'
+WHERE c.Eventname = 'Triathlon Canada' and c.Eventdate = '2021-03-01T00:00:00'
 ORDER BY c.TotalScore ASC
 
 Query 2
 SELECT c.Eventname FROM c 
 WHERE c.Eventdate > '2020-12-31T00:00:00' AND c.Eventdate < '2022-01-01T00:00:00'
-AND c.ParticipantId = 4713
+AND c.ParticipantId = 51
 GROUP by c.Eventname
 
 Query 3
@@ -15,4 +15,4 @@ WHERE c.Eventname = 'Marathon New York'
 
 Query 4
 SELECT c.ParticipantFirstname, c.ParticipantLastname, c.TotalScore FROM c 
-WHERE c.Eventname = 'Marathon New York' AND c.ParticipantId  = 20000
+WHERE c.Eventname = 'Marathon New York' AND c.ParticipantId  = 20

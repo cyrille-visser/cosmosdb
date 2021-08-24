@@ -19,14 +19,14 @@ namespace CosmosEvents
 
             string conString = ConfigurationManager.AppSettings["ConnectionString"];
 
-            _client = new CosmosClient(conString, new CosmosClientOptions() { AllowBulkExecution = true }) ;
+            _client = new CosmosClient(conString, new CosmosClientOptions() { AllowBulkExecution = true, MaxRetryAttemptsOnRateLimitedRequests=60 }) ;
         }
         
         /// <summary>
         /// Create database and container if not exists.
         /// </summary>
         /// <returns></returns>
-        public async Task Initialize()
+        public async Task Initialize(int RU=10000)
         {
             try
             {
@@ -36,7 +36,7 @@ namespace CosmosEvents
 
                 DatabaseResponse db = await _client.CreateDatabaseIfNotExistsAsync(databaseId);
 
-                _container = await db.Database.CreateContainerIfNotExistsAsync(new ContainerProperties() { Id = containerId, PartitionKeyPath = partitionKeyPath }, ThroughputProperties.CreateAutoscaleThroughput(10000));
+                _container = await db.Database.CreateContainerIfNotExistsAsync(new ContainerProperties() { Id = containerId, PartitionKeyPath = partitionKeyPath }, ThroughputProperties.CreateAutoscaleThroughput(RU));
                 
                 await SetIndexPolicy();
             }
@@ -96,6 +96,7 @@ namespace CosmosEvents
             {
 
                 Console.WriteLine("Error {0}", e.Message);
+
             }
 
         }
@@ -220,15 +221,17 @@ namespace CosmosEvents
             string continuationToken = string.Empty;
             using (FeedIterator<dynamic> resultset = _container.GetItemQueryIterator<dynamic>(query))
             {
-                FeedResponse<dynamic> response = await resultset.ReadNextAsync();
-                Console.WriteLine("Q3 took {0} ms. RU consumed: {1}, Number of items : {2}", response.Diagnostics.GetClientElapsedTime().TotalMilliseconds, response.RequestCharge, response.Count);
-
-                foreach (var item in response)
+                while (resultset.HasMoreResults)
                 {
-                    list.Add(item);
+                    FeedResponse<dynamic> response = await resultset.ReadNextAsync();
+                    Console.WriteLine("Q2 took {0} ms. RU consumed: {1}, Number of items : {2}", response.Diagnostics.GetClientElapsedTime().TotalMilliseconds, response.RequestCharge, response.Count);
+
+                    foreach (var item in response)
+                    {
+                        list.Add(item);
+                    }
                 }
             }
-
             return list.ToArray();
         }
 
@@ -355,6 +358,7 @@ namespace CosmosEvents
             policy.IncludedPaths.Add(new IncludedPath { Path = "/Eventdate/?" });
             policy.IncludedPaths.Add(new IncludedPath { Path = "/ParticipantId/?" });
             policy.IncludedPaths.Add(new IncludedPath { Path = "/TotalScore/?" });
+            policy.IncludedPaths.Add(new IncludedPath { Path = "/Score/?" });
 
             resp.Resource.IndexingPolicy = policy;
 
